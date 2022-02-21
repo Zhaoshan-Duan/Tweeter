@@ -1,8 +1,16 @@
+
 package com.codepath.apps.restclienttemplate
 
+import android.app.Activity
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
+import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -36,7 +44,7 @@ class TimelineActivity : AppCompatActivity() {
         swipeContainer.setColorSchemeResources(android.R.color.holo_blue_bright,
             android.R.color.holo_green_light,
             android.R.color.holo_orange_light,
-            android.R.color.holo_red_light);
+            android.R.color.holo_red_light)
 
         rvTweets = findViewById(R.id.rvTweets)
         adapter = TweetsAdapter(tweets)
@@ -46,6 +54,49 @@ class TimelineActivity : AppCompatActivity() {
 
         populateHomeTimeline()
     }
+
+    // inflate the menu to use
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    // ActivityResult Launcher
+    var editActivityResultLauncher: ActivityResultLauncher<Intent> = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // If the user comes back to this activity from EditActivity
+        // with no error or cancellation
+        if (result.resultCode == Activity.RESULT_OK) {
+
+            val data = result.data
+            // Get the data passed from ComposeActivity
+            if (data != null) {
+
+                val newTweet = data?.getParcelableExtra("tweet") as Tweet
+
+                // Update timeline:
+                //  modifying the data source of tweets:
+                tweets.add(0, newTweet)
+                //  update adapter
+                adapter.notifyItemChanged(0)
+                rvTweets.smoothScrollToPosition(0)
+            }
+        }
+    }
+    // Handles clicks on menu item
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.compose){
+            val intent = Intent(this, ComposeActivity::class.java)
+            editActivityResultLauncher.launch(intent)
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+
+
+
+
 
     fun populateHomeTimeline(){
         client.getHomeTimeline(object: JsonHttpResponseHandler(){
@@ -77,5 +128,6 @@ class TimelineActivity : AppCompatActivity() {
     }
     companion object{
         val TAG = "TimelineActivity"
+        val REQUEST_CODE = 10
     }
 }
